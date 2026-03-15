@@ -1,0 +1,38 @@
+name: Weekly Fuel Price Sync
+
+on:
+  # ── Automatic: every Monday at 00:00 UTC ──────────────────────────────────
+  schedule:
+    - cron: "0 0 * * 1"
+
+  # ── Manual trigger from the GitHub Actions UI ─────────────────────────────
+  workflow_dispatch:
+
+jobs:
+  fuel-sync:
+    name: Fetch EIA Diesel Price → Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # 1. Check out the repo so the script file is available
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Set up Python (only stdlib + two deps needed)
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 3. Install only the two libraries the script needs
+      - name: Install dependencies
+        run: pip install --quiet supabase requests
+
+      # 4. Run the sync script — secrets are injected as environment variables
+      - name: Run fuel sync
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          EIA_API_KEY:  ${{ secrets.EIA_API_KEY }}
+        run: python cron_fuel_sync.py
